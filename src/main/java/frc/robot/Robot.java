@@ -3,15 +3,26 @@
 // the WPILib BSD license file in the root directory of this project.
 
 package frc.robot;
-
+import com.ctre.phoenix.sensors.Pigeon2;
+// https://github.com/Mechanical-Advantage/AdvantageKit/releases/download/v2.2.4/AdvantageKit.json
 import com.pathplanner.lib.server.PathPlannerServer;
+
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.XboxController;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
+
+import frc.robot.subsystems.Vision;
+import frc.robot.subsystems.Arm;
+import frc.robot.subsystems.NodeSelector;
+
 import java.io.File;
 import java.io.IOException;
+
 import swervelib.parser.SwerveParser;
 
 /**
@@ -21,13 +32,29 @@ import swervelib.parser.SwerveParser;
  */
 public class Robot extends TimedRobot
 {
+  XboxController driver_Controller = new XboxController(0);
+  XboxController operator_controller = new XboxController(1);
 
-  private static Robot   instance;
-  private        Command m_autonomousCommand;
+  boolean operator_controller_A_button;
+  boolean operator_controller_Y_button;
+  boolean operator_controller_X_button;
+  boolean operator_controller_B_button;
+  
+  private static Robot instance;
+  private Command m_autonomousCommand;
 
   private RobotContainer m_robotContainer;
 
   private Timer disabledTimer;
+
+  Vision m_vision = new Vision();
+  Arm m_arm = new Arm();
+  NodeSelector m_nodeSelector = new NodeSelector();
+
+  boolean[] operator_buttons = {false, false, false, false, false, false, false, false};
+  double[] operator_triggers = new double[2];
+
+  public Pigeon2 gyro;
 
   public Robot()
   {
@@ -53,6 +80,12 @@ public class Robot extends TimedRobot
     // Create a timer to disable motor brake a few seconds after disable.  This will let the robot stop
     // immediately when disabled, but then also let it be pushed more 
     disabledTimer = new Timer();
+
+    gyro = new Pigeon2(16);
+    gyro.configFactoryDefault();
+    gyro.setYaw(0);
+
+    
   }
 
   /**
@@ -70,6 +103,27 @@ public class Robot extends TimedRobot
     // and running subsystem periodic() methods.  This must be called from the robot's periodic
     // block in order for anything in the Command-based framework to work.
     CommandScheduler.getInstance().run();
+
+    if (m_vision.getEstimatedRobotPose() != null){
+      m_robotContainer.addVisionMeasurement(m_vision.getEstimatedRobotPose());
+      SmartDashboard.putNumber("Vision Pose X", m_vision.getEstimatedRobotPose().getX());
+      SmartDashboard.putNumber("Vision Pose Y", m_vision.getEstimatedRobotPose().getY());
+    }
+    
+    m_vision.gamePiecePeriodic();
+    m_vision.aprilTagPeriodic();
+    m_vision.reflectiveTapePeriodic();
+    m_nodeSelector.updateSelectedNode(driver_Controller.getPOV());
+
+    SmartDashboard.putNumber("Main Arm Position", m_arm.get_main_arm_position());
+    SmartDashboard.putNumber("Intake Arm Position", m_arm.get_intake_arm_position_selected());
+    SmartDashboard.putNumber("Main Arm Position Throughbore", m_arm.get_main_arm_position_throughbore());
+    SmartDashboard.putNumber("Swerve Pose X", m_robotContainer.getPose().getX());
+    SmartDashboard.putNumber("Swerve Pose Y", m_robotContainer.getPose().getY());
+    SmartDashboard.putString("node", m_nodeSelector.getCurrentNode());
+
+    getControllerStates();
+
   }
 
   /**
@@ -115,6 +169,7 @@ public class Robot extends TimedRobot
   @Override
   public void autonomousPeriodic()
   {
+    
   }
 
   @Override
@@ -138,6 +193,34 @@ public class Robot extends TimedRobot
   @Override
   public void teleopPeriodic()
   {
+    // m_arm.armPeriodic(operator_buttons, operator_triggers, operator_controller.getLeftY(), operator_controller.getRightY());
+
+    if (driver_Controller.getPOV() == 0){
+      m_robotContainer.drive(new Translation2d(0, 2), 0, false);
+    }
+    else if (driver_Controller.getPOV() == 90){
+      m_robotContainer.drive(new Translation2d(2, 0), 0, false);
+
+    }
+    else if (driver_Controller.getPOV() == 270){
+      m_robotContainer.drive(new Translation2d(-2, 0), 0, false);
+
+    }
+    else if (driver_Controller.getPOV() == 180){
+      m_robotContainer.drive(new Translation2d(0, -2), 0, false);
+
+    }
+    else if (driver_Controller.getRawButton(6)) {
+      m_robotContainer.drive(new Translation2d(0, 0), -m_vision.getGamePieceYaw()/10, false);
+      // m_robotContainer.updateSwerveParameters(new Translation2d(0, 0), -m_vision.getGamePieceYaw() * (0.1 / Math.sqrt(Math.abs(m_vision.getGamePieceYaw()))), false);
+    }
+    else if (driver_Controller.getRawButton(5)) {
+      Constants.speedScale = 0.5;
+    }
+    else {
+      Constants.speedScale = 1.0;
+    }
+
   }
 
   @Override
@@ -176,5 +259,24 @@ public class Robot extends TimedRobot
   @Override
   public void simulationPeriodic()
   {
+  }
+
+
+  public void getControllerStates() {
+    operator_controller_A_button = operator_controller.getAButton();
+    operator_controller_B_button = operator_controller.getBButton();
+    operator_controller_X_button = operator_controller.getXButton();
+    operator_controller_Y_button = operator_controller.getYButton();
+    operator_buttons[0] = operator_controller_X_button;
+    operator_buttons[1] = operator_controller_Y_button;
+    operator_buttons[2] = operator_controller_A_button;
+    operator_buttons[3] = operator_controller_B_button;
+    operator_buttons[4] = operator_controller.getStartButton();
+    operator_buttons[5] = operator_controller.getBackButton();
+    operator_buttons[6] = operator_controller.getLeftBumperReleased();
+    operator_buttons[7] = operator_controller.getRightBumperReleased();
+    operator_triggers[0] = operator_controller.getLeftTriggerAxis();
+    operator_triggers[1] = operator_controller.getRightTriggerAxis();
+
   }
 }

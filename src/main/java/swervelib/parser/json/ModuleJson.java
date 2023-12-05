@@ -1,6 +1,5 @@
 package swervelib.parser.json;
 
-import com.revrobotics.MotorFeedbackSensor;
 import edu.wpi.first.math.util.Units;
 import swervelib.encoders.SwerveAbsoluteEncoder;
 import swervelib.motors.SwerveMotor;
@@ -31,7 +30,7 @@ public class ModuleJson
    * {@link swervelib.math.SwerveMath#calculateDegreesPerSteeringRotation(double, double)} for angle motors or
    * {@link swervelib.math.SwerveMath#calculateMetersPerRotation(double, double, double)} for drive motors.
    */
-  public MotorConfigDouble conversionFactor        = new MotorConfigDouble(0, 0);
+  public MotorConfigDouble conversionFactor = new MotorConfigDouble(0, 0);
   /**
    * Absolute encoder device configuration.
    */
@@ -72,14 +71,6 @@ public class ModuleJson
     SwerveAbsoluteEncoder absEncoder = encoder.createEncoder(angleMotor);
 
     // If the absolute encoder is attached.
-    if (absEncoder != null)
-    {
-      if (absEncoder.getAbsoluteEncoder() instanceof MotorFeedbackSensor)
-      {
-        angleMotor.setAbsoluteEncoder(absEncoder);
-      }
-    }
-
     if (absEncoder == null)
     {
       absEncoder = angle.createIntegratedEncoder(angleMotor);
