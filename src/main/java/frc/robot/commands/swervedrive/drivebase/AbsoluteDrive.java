@@ -98,7 +98,7 @@ public class AbsoluteDrive extends CommandBase
     SmartDashboard.putString("Translation", translation.toString());
 
     // Make the robot move
-    swerve.drive(translation, desiredSpeeds.omegaRadiansPerSecond, false);
+    swerve.drive(translation, desiredSpeeds.omegaRadiansPerSecond, true);
 
   }
 

@@ -5,8 +5,6 @@
 package frc.robot;
 
 import edu.wpi.first.math.MathUtil;
-import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj.XboxController;
@@ -55,11 +53,11 @@ public class RobotContainer
                                                           // are back-right positive while robot
                                                           // controls are front-left positive
                                                           () -> MathUtil.applyDeadband(driverXbox.getLeftY(),
-                                                                                       OperatorConstants.LEFT_Y_DEADBAND)*Constants.speedScale,
+                                                                                       OperatorConstants.LEFT_Y_DEADBAND),
                                                           () -> MathUtil.applyDeadband(driverXbox.getLeftX(),
-                                                                                       OperatorConstants.LEFT_X_DEADBAND)*Constants.speedScale,
-                                                          () -> -driverXbox.getRightX()*Constants.speedScale,
-                                                          () -> -driverXbox.getRightY()*Constants.speedScale);
+                                                                                       OperatorConstants.LEFT_X_DEADBAND),
+                                                          () -> -driverXbox.getRightX(),
+                                                          () -> -driverXbox.getRightY());
 
     AbsoluteFieldDrive closedFieldAbsoluteDrive = new AbsoluteFieldDrive(drivebase,
                                                                          () ->
@@ -80,8 +78,7 @@ public class RobotContainer
         () -> MathUtil.applyDeadband(driverController.getX(), OperatorConstants.LEFT_X_DEADBAND),
         () -> -driverController.getRawAxis(3), () -> true);
 
-    // drivebase.setDefaultCommand(!RobotBase.isSimulation() ? closedAbsoluteDrive : closedFieldAbsoluteDrive);
-    drivebase.setDefaultCommand(closedAbsoluteDrive);
+    drivebase.setDefaultCommand(!RobotBase.isSimulation() ? closedAbsoluteDrive : closedFieldAbsoluteDrive);
   }
 
   /**
@@ -120,17 +117,4 @@ public class RobotContainer
   {
     drivebase.setMotorBrake(brake);
   }
-
-  public Pose2d getPose(){
-    return drivebase.getPose();
-  }
-
-  public void addVisionMeasurement(Pose2d robotPose){
-    drivebase.addVisionMeasurement(robotPose);
-  }
-
-  public void drive(Translation2d xy, double rotation, boolean fieldRelative){
-    drivebase.drive(xy, 0, false);
-  }
-  
 }
