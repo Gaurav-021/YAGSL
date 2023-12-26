@@ -7,12 +7,12 @@
   "drive": {
     "type": "falcon",
     "id": 34,
-    "canbus": "rio"
+    "canbus": null
   },
   "angle": {
     "type": "falcon",
     "id": 35,
-    "canbus": "rio"
+    "canbus": null
   },
   "conversionFactor": {
     "angle": 0.000397661902,
@@ -21,7 +21,7 @@
   "encoder": {
     "type": "cancoder",
     "id": 12,
-    "canbus": "rio"
+    "canbus": null
   },
   "inverted": {
     "drive": false,
